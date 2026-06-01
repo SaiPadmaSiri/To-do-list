@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced To-Do List</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+body{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:linear-gradient(135deg,#667eea,#764ba2);
+    padding:20px;
+}
+
+.container{
+    width:100%;
+    max-width:650px;
+    background:white;
+    border-radius:20px;
+    padding:30px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+
+h1{
+    text-align:center;
+    color:#5a4fcf;
+    margin-bottom:20px;
+}
+
+.input-section{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+#taskInput,#taskDate{
+    flex:1;
+    padding:12px;
+    border:2px solid #ddd;
+    border-radius:10px;
+    font-size:16px;
+}
+
+#taskInput:focus,
+#taskDate:focus{
+    outline:none;
+    border-color:#667eea;
+}
+
+.stats{
+    display:flex;
+    justify-content:space-between;
+    margin:20px 0;
+    font-weight:bold;
+    color:#555;
+}
+
+#clearAll{
+    width:100%;
+    padding:12px;
+    border:none;
+    background:#ff4d6d;
+    color:white;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:15px;
+    margin-bottom:15px;
+}
+
+#clearAll:hover{
+    background:#e63956;
+}
+
+ul{
+    list-style:none;
+}
+
+li{
+    background:linear-gradient(135deg,#89f7fe,#66a6ff);
+    margin:12px 0;
+    padding:15px;
+    border-radius:12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    color:#222;
+    transition:0.3s;
+}
+
+li:hover{
+    transform:scale(1.02);
+}
+
+.task-left{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.task-text{
+    font-size:17px;
+    font-weight:500;
+}
+
+.completed{
+    text-decoration:line-through;
+    color:#666;
+}
+
+.date{
+    font-size:12px;
+    color:#444;
+    margin-top:4px;
+}
+
+.delete-btn{
+    border:none;
+    background:#ff4d4d;
+    color:white;
+    padding:8px 12px;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+.delete-btn:hover{
+    background:#cc0000;
+}
+
+input[type="checkbox"]{
+    width:20px;
+    height:20px;
+    cursor:pointer;
+}
+
+.empty{
+    text-align:center;
+    color:gray;
+    margin-top:20px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>✨ Smart To-Do List</h1>
+
+    <div class="input-section">
+        <input type="text" id="taskInput"
+               placeholder="Enter task and press Enter">
+        <input type="date" id="taskDate">
+    </div>
+
+    <div class="stats">
+        <span>Total Tasks: <span id="total">0</span></span>
+        <span>Completed: <span id="completed">0</span></span>
+    </div>
+
+    <button id="clearAll">🗑 Clear All Tasks</button>
+
+    <ul id="taskList"></ul>
+
+    <p class="empty" id="emptyMsg">
+        No tasks added yet.
+    </p>
+
+</div>
+
+<script>
+const taskInput = document.getElementById("taskInput");
+const taskDate = document.getElementById("taskDate");
+const taskList = document.getElementById("taskList");
+const total = document.getElementById("total");
+const completed = document.getElementById("completed");
+const emptyMsg = document.getElementById("emptyMsg");
+
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+function saveTasks(){
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+}
+
+function updateStats(){
+    total.textContent = tasks.length;
+
+    completed.textContent =
+        tasks.filter(task => task.done).length;
+
+    emptyMsg.style.display =
+        tasks.length === 0 ? "block" : "none";
+}
+
+function renderTasks(){
+
+    taskList.innerHTML = "";
+
+    tasks.forEach((task,index)=>{
+
+        const li = document.createElement("li");
+
+        li.innerHTML = `
+            <div class="task-left">
+                <input type="checkbox"
+                       ${task.done ? "checked" : ""}>
+                <div>
+                    <div class="task-text ${task.done ? "completed" : ""}">
+                        ${task.text}
+                    </div>
+                    ${task.date ?
+                    `<div class="date">📅 ${task.date}</div>`
+                    : ""}
+                </div>
+            </div>
+
+            <button class="delete-btn">
+                Delete
+            </button>
+        `;
+
+        const checkbox = li.querySelector("input");
+
+        checkbox.addEventListener("change",()=>{
+            tasks[index].done = checkbox.checked;
+            saveTasks();
+            renderTasks();
+        });
+
+        li.querySelector(".delete-btn")
+        .addEventListener("click",()=>{
+            tasks.splice(index,1);
+            saveTasks();
+            renderTasks();
+        });
+
+        taskList.appendChild(li);
+    });
+
+    updateStats();
+}
+
+function addTask(){
+
+    const text = taskInput.value.trim();
+
+    if(text === "") return;
+
+    tasks.push({
+        text:text,
+        date:taskDate.value,
+        done:false
+    });
+
+    saveTasks();
+    renderTasks();
+
+    taskInput.value = "";
+    taskDate.value = "";
+}
+
+taskInput.addEventListener("keypress",(e)=>{
+    if(e.key === "Enter"){
+        addTask();
+    }
+});
+
+document.getElementById("clearAll")
+.addEventListener("click",()=>{
+
+    if(confirm("Delete all tasks?")){
+        tasks = [];
+        saveTasks();
+        renderTasks();
+    }
+});
+
+renderTasks();
+</script>
+
+</body>
+</html>
